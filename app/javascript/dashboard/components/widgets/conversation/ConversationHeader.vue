@@ -13,6 +13,7 @@ import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useI18n } from 'vue-i18n';
+import Flag from 'dashboard/components-next/flag/Flag.vue';
 
 const props = defineProps({
   chat: {
@@ -90,6 +91,14 @@ const hasMultipleInboxes = computed(
 );
 
 const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
+
+// Location derived from IP lookup stored in contact.additional_attributes
+const ipCountryCode = computed(
+  () => currentContact.value?.additional_attributes?.country_code
+);
+const ipCountryName = computed(
+  () => currentContact.value?.additional_attributes?.country
+);
 </script>
 
 <template>
@@ -122,6 +131,12 @@ const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
           >
             {{ currentContact.name }}
           </span>
+          <Flag
+            v-if="ipCountryCode"
+            :country="ipCountryCode"
+            class="size-3.5"
+            v-tooltip="ipCountryName || ipCountryCode"
+          />
           <fluent-icon
             v-if="!isHMACVerified"
             v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
