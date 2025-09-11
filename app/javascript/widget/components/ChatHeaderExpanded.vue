@@ -1,11 +1,7 @@
 <script setup>
 import HeaderActions from './HeaderActions.vue';
 import { computed } from 'vue';
-import { useStore } from 'vuex';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
-import { getActiveCountryCode } from 'shared/components/PhoneInput/helper';
-import { getCountryFlag } from 'dashboard/helper/flag';
-import countries from 'shared/constants/countries';
 
 const props = defineProps({
   avatarUrl: {
@@ -31,23 +27,6 @@ const { formatMessage } = useMessageFormatter();
 const containerClasses = computed(() => [
   props.avatarUrl ? 'justify-between' : 'justify-end',
 ]);
-
-const store = useStore();
-const currentUser = computed(
-  () => store.getters['contacts/getCurrentUser'] || {}
-);
-const countryCode = computed(() => {
-  const codeFromUser = currentUser.value?.additional_attributes?.country_code;
-  return codeFromUser || getActiveCountryCode() || '';
-});
-const countryFlag = computed(() =>
-  countryCode.value ? getCountryFlag(countryCode.value) : ''
-);
-const countryName = computed(() => {
-  const code = countryCode.value ? countryCode.value.toUpperCase() : '';
-  const match = countries.find(c => c.id === code);
-  return match ? match.name : '';
-});
 </script>
 
 <template>
@@ -66,15 +45,10 @@ const countryName = computed(() => {
         :show-end-conversation-button="false"
       />
     </div>
-    <div class="mt-4 mb-1.5 flex items-center gap-2">
-      <h2
-        v-dompurify-html="introHeading"
-        class="text-2xl font-medium text-n-slate-12 line-clamp-4"
-      />
-      <span v-if="countryFlag" :title="countryName" class="text-base"
-        >{{ countryFlag }}</span
-      >
-    </div>
+    <h2
+      v-dompurify-html="introHeading"
+      class="mt-4 text-2xl mb-1.5 font-medium text-n-slate-12 line-clamp-4"
+    />
     <p
       v-dompurify-html="formatMessage(introBody)"
       class="text-lg leading-normal text-n-slate-11 [&_a]:underline line-clamp-6"
