@@ -13,6 +13,8 @@ import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useI18n } from 'vue-i18n';
+import { getCountryFlag } from 'dashboard/helper/flag';
+import countries from 'shared/constants/countries';
 
 const props = defineProps({
   chat: {
@@ -68,6 +70,18 @@ const currentContact = computed(() =>
   store.getters['contacts/getContact'](props.chat.meta.sender.id)
 );
 
+const countryCode = computed(
+  () => currentContact.value?.additional_attributes?.country_code || ''
+);
+const countryFlag = computed(() =>
+  countryCode.value ? getCountryFlag(countryCode.value) : ''
+);
+const countryName = computed(() => {
+  const code = countryCode.value ? countryCode.value.toUpperCase() : '';
+  const match = countries.find(c => c.id === code);
+  return match ? match.name : '';
+});
+
 const isSnoozed = computed(
   () => currentChat.value.status === wootConstants.STATUS_TYPE.SNOOZED
 );
@@ -122,6 +136,12 @@ const hasSlaPolicyId = computed(() => props.chat?.sla_policy_id);
           >
             {{ currentContact.name }}
           </span>
+          <span
+            v-if="countryFlag"
+            :title="countryName"
+            class="text-base"
+            >{{ countryFlag }}</span
+          >
           <fluent-icon
             v-if="!isHMACVerified"
             v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"

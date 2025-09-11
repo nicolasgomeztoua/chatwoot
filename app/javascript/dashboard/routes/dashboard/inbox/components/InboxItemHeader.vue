@@ -11,6 +11,8 @@ import CustomSnoozeModal from 'dashboard/components/CustomSnoozeModal.vue';
 import { emitter } from 'shared/helpers/mitt';
 import BackButton from 'dashboard/components/widgets/BackButton.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import { getCountryFlag } from 'dashboard/helper/flag';
+import countries from 'shared/constants/countries';
 
 export default {
   components: {
@@ -38,7 +40,22 @@ export default {
     return { showCustomSnoozeModal: false };
   },
   computed: {
-    ...mapGetters({ meta: 'notifications/getMeta' }),
+    ...mapGetters({ meta: 'notifications/getMeta', selectedChat: 'getSelectedChat' }),
+    countryCode() {
+      try {
+        return this.selectedChat?.meta?.sender?.additional_attributes?.country_code || '';
+      } catch (e) {
+        return '';
+      }
+    },
+    countryFlag() {
+      return this.countryCode ? getCountryFlag(this.countryCode) : '';
+    },
+    countryName() {
+      const code = this.countryCode ? this.countryCode.toUpperCase() : '';
+      const match = countries.find(c => c.id === code);
+      return match ? match.name : '';
+    },
   },
   mounted() {
     emitter.on(CMD_SNOOZE_NOTIFICATION, this.onCmdSnoozeNotification);
@@ -124,6 +141,7 @@ export default {
         @next="onClickNext"
         @prev="onClickPrev"
       />
+      <span v-if="countryFlag" :title="countryName" class="text-base">{{ countryFlag }}</span>
     </div>
     <div class="flex items-center gap-2">
       <NextButton
