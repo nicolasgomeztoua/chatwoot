@@ -4,6 +4,9 @@ import nextAvailabilityTime from 'widget/mixins/nextAvailabilityTime';
 import FluentIcon from 'shared/components/FluentIcon/Index.vue';
 import HeaderActions from './HeaderActions.vue';
 import routerMixin from 'widget/mixins/routerMixin';
+import { getActiveCountryCode } from 'shared/components/PhoneInput/helper';
+import { getCountryFlag } from 'dashboard/helper/flag';
+import countries from 'shared/constants/countries';
 
 export default {
   name: 'ChatHeader',
@@ -33,6 +36,19 @@ export default {
       type: Array,
       default: () => {},
     },
+    countryName() {
+      try {
+        const user = this.$store.getters['contacts/getCurrentUser'] || {};
+        const rawCode =
+          (user.additional_attributes && user.additional_attributes.country_code) ||
+          getActiveCountryCode();
+        const code = rawCode ? rawCode.toUpperCase() : '';
+        const match = countries.find(c => c.id === code);
+        return match ? match.name : '';
+      } catch (_e) {
+        return '';
+      }
+    },
   },
   computed: {
     isOnline() {
@@ -43,6 +59,17 @@ export default {
         return this.isInBetweenTheWorkingHours;
       }
       return anyAgentOnline;
+    },
+    countryFlag() {
+      try {
+        const user = this.$store.getters['contacts/getCurrentUser'] || {};
+        const code =
+          (user.additional_attributes && user.additional_attributes.country_code) ||
+          getActiveCountryCode();
+        return code ? getCountryFlag(code) : '';
+      } catch (_e) {
+        return '';
+      }
     },
   },
   methods: {
@@ -74,6 +101,12 @@ export default {
           class="flex items-center text-base font-medium leading-4 text-n-slate-12"
         >
           <span v-dompurify-html="title" class="ltr:mr-1 rtl:ml-1" />
+          <span
+            v-if="countryFlag"
+            :title="countryName"
+            class="ltr:ml-1 rtl:mr-1 text-base"
+            >{{ countryFlag }}</span
+          >
           <div
             :class="`h-2 w-2 rounded-full
               ${isOnline ? 'bg-n-teal-10' : 'hidden'}`"
