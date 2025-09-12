@@ -138,11 +138,14 @@ class Notification::PushNotificationService
   end
 
   def fcm_data
+    # Include a lightweight hint so the app could optionally collapse or style visitor alerts
+    visitor_hint = (notification.meta&.dig('push_title')&.include?('New visitor') ? '1' : '0')
     {
       payload: {
         data: {
           notification: notification.fcm_push_data
-        }
+        },
+        visitor_new: visitor_hint
       }.to_json
     }
   end

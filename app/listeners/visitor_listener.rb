@@ -15,7 +15,8 @@ class VisitorListener < BaseListener
         inbox_id: contact_inbox.inbox_id,
         contact_id: contact_inbox.contact_id,
         contact_inbox_id: contact_inbox.id,
-        additional_attributes: build_additional_attributes(event)
+        additional_attributes: build_additional_attributes(event),
+        status: :pending
       )
     end
 
@@ -23,7 +24,9 @@ class VisitorListener < BaseListener
     country_code = fetch_country_code(contact_inbox.contact)
     push_title = "#{to_flag(country_code)} - New visitor".strip
 
-    notify_all_agents(account, conversation, push_title, country_code)
+    # Only send our custom "new visitor" notification when the conversation is in pending state
+    # to avoid duplicates with normal conversation creation/open events
+    notify_all_agents(account, conversation, push_title, country_code) if conversation.pending?
   end
 
   # Intentionally do not handle webwidget.triggered to avoid click-based notifications
