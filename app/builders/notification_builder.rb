@@ -28,13 +28,13 @@ class NotificationBuilder
     # skip notifications for blocked conversations except for user mentions
     return if primary_actor.contact.blocked? && notification_type != 'conversation_mention'
 
-    # Deduplicate conversation creation notifications for the same user and conversation
+    # Throttle conversation_creation notifications briefly to avoid duplicates from multiple listeners
     if notification_type == 'conversation_creation'
-      return if user.notifications.exists?(
-        notification_type: notification_type,
-        account_id: account.id,
-        primary_actor: primary_actor
-      )
+      lock_key = "lock:notification:creation:acct:#{account.id}:user:#{user.id}:conv:#{primary_actor.class}:#{primary_actor.id}"
+      lock_manager = Redis::LockManager.new
+      # If we cannot acquire a short-lived lock, skip creating a duplicate notification
+      return unless lock_manager.lock(lock_key, Redis::LockManager::LOCK_TIMEOUT)
+      # No need to explicitly unlock; the lock expires quickly
     end
 
     user.notifications.create!(
