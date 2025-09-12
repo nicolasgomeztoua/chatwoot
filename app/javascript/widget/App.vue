@@ -256,6 +256,17 @@ export default {
           this.setAppConfig(message);
           this.$store.dispatch('contacts/get');
           this.setCampaignReadData(message.campaignsSnoozedTill);
+          // Ensure a single webwidget.loaded event per session even if SDK changes are not loaded
+          try {
+            const sessionKey = 'cw_loaded_event_sent';
+            const sent = sessionStorage.getItem(sessionKey);
+            if (!sent) {
+              this.$store.dispatch('events/create', { name: 'webwidget.loaded' });
+              sessionStorage.setItem(sessionKey, '1');
+            }
+          } catch (e) {
+            // ignore storage errors
+          }
         } else if (message.event === 'widget-visible') {
           this.scrollConversationToBottom();
         } else if (message.event === 'change-url') {
