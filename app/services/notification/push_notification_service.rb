@@ -31,8 +31,9 @@ class Notification::PushNotificationService
   end
 
   def push_message
+    override_title = notification.meta&.dig('push_title')
     {
-      title: notification.push_message_title,
+      title: (override_title.presence || notification.push_message_title),
       tag: "#{notification.notification_type}_#{conversation.display_id}_#{notification.id}",
       url: push_url
     }
@@ -147,9 +148,11 @@ class Notification::PushNotificationService
   end
 
   def fcm_notification
+    override_title = notification.meta&.dig('push_title')
+    override_body = notification.meta&.dig('push_body')
     {
-      title: notification.push_message_title,
-      body: notification.push_message_body
+      title: (override_title.presence || notification.push_message_title),
+      body: (override_body.nil? ? notification.push_message_body : override_body)
     }
   end
 

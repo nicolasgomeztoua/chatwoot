@@ -192,6 +192,18 @@ export const IFrameHelper = {
       if (!window.$chatwoot.resetTriggered) {
         dispatchWindowEvent({ eventName: CHATWOOT_READY });
       }
+
+      // Send a single webwidget.loaded event once per session
+      try {
+        const sessionKey = 'cw_loaded_event_sent';
+        const sent = sessionStorage.getItem(sessionKey);
+        if (!sent) {
+          IFrameHelper.pushEvent('webwidget.loaded');
+          sessionStorage.setItem(sessionKey, '1');
+        }
+      } catch (e) {
+        // ignore storage errors
+      }
     },
     error: ({ errorType, data }) => {
       dispatchWindowEvent({ eventName: CHATWOOT_ERROR, data: data });
