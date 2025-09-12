@@ -20,9 +20,10 @@ class VisitorListener < BaseListener
       )
     end
 
-    # Mark as visitor-loaded so downstream notifications can customize push title
+    # Mark as visitor-loaded and persist best-effort location for reliability
     country_code = fetch_country_code(contact_inbox.contact)
     add_visitor_marker(conversation, country_code)
+    persist_country_if_missing(contact_inbox.contact, country_code)
     notify_all_agents(conversation.inbox.account, conversation)
   end
 
@@ -47,6 +48,20 @@ class VisitorListener < BaseListener
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_column(:additional_attributes, attrs)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def persist_country_if_missing(contact, country_code)
+    return if country_code.blank?
+
+    additional = (contact.additional_attributes || {}).dup
+    changed = false
+    if additional['country_code'].blank?
+      additional['country_code'] = country_code
+      changed = true
+    end
+    if changed
+      contact.update!(additional_attributes: additional)
+    end
   end
 
   def notify_all_agents(account, conversation)

@@ -18,9 +18,30 @@ module WebsiteTokenHelper
     raise ActiveRecord::RecordNotFound unless @contact
 
     Current.contact = @contact
+
+    # Ensure we always capture latest client IP and trigger lookup for returning users
+    if @current_account.feature_enabled?('ip_lookup')
+      ip = client_ip
+      if ip.present?
+        additional = (@contact.additional_attributes || {}).dup
+        # Update only when changed or missing
+        if additional['updated_at_ip'] != ip && additional['created_at_ip'] != ip
+          additional['updated_at_ip'] = ip
+          @contact.update!(additional_attributes: additional)
+          ContactIpLookupJob.perform_later(@contact)
+        end
+      end
+    end
   end
 
   def permitted_params
     params.permit(:website_token)
+  end
+
+  def client_ip
+    forwarded_for = request.headers['X-Forwarded-For']
+    return forwarded_for.split(',').first.to_s.strip if forwarded_for.present?
+
+    request.remote_ip
   end
 end

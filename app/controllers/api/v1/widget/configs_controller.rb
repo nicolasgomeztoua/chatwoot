@@ -33,7 +33,11 @@ class Api::V1::Widget::ConfigsController < Api::V1::Widget::BaseController
 
   def additional_attributes
     if @web_widget.inbox.account.feature_enabled?('ip_lookup')
-      { created_at_ip: request.remote_ip }
+      # Always set updated_at_ip so returning users also get GeoIP lookup
+      {
+        created_at_ip: request.remote_ip,
+        updated_at_ip: request.remote_ip
+      }
     else
       {}
     end

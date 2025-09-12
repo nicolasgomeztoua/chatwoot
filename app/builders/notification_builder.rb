@@ -28,6 +28,15 @@ class NotificationBuilder
     # skip notifications for blocked conversations except for user mentions
     return if primary_actor.contact.blocked? && notification_type != 'conversation_mention'
 
+    # Deduplicate conversation creation notifications for the same user and conversation
+    if notification_type == 'conversation_creation'
+      return if user.notifications.exists?(
+        notification_type: notification_type,
+        account_id: account.id,
+        primary_actor: primary_actor
+      )
+    end
+
     user.notifications.create!(
       notification_type: notification_type,
       account: account,

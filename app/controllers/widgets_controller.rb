@@ -59,7 +59,10 @@ class WidgetsController < ActionController::Base
 
   def additional_attributes
     if @web_widget.inbox.account.feature_enabled?('ip_lookup')
-      { created_at_ip: request.remote_ip }
+      {
+        created_at_ip: request.remote_ip,
+        updated_at_ip: request.remote_ip
+      }
     else
       {}
     end
