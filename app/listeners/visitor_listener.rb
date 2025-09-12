@@ -26,10 +26,7 @@ class VisitorListener < BaseListener
     notify_all_agents(account, conversation, push_title, country_code)
   end
 
-  # Backward compatibility if needed; delegate old trigger to loaded
-  def webwidget_triggered(event)
-    webwidget_loaded(event)
-  end
+  # Intentionally do not handle webwidget.triggered to avoid click-based notifications
 
   private
 
