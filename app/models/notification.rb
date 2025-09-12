@@ -98,6 +98,11 @@ class Notification < ApplicationRecord
       'sla_missed_resolution' => 'notifications.notification_title.sla_missed_resolution'
     }
 
+    # If the conversation was just visitor-loaded, override to show flag + New visitor
+    if visitor_loaded_with_flag?
+      return "#{visitor_flag} - New visitor"
+    end
+
     i18n_key = notification_title_map[notification_type]
     return '' unless i18n_key
 
@@ -130,6 +135,18 @@ class Notification < ApplicationRecord
   end
 
   private
+
+  def visitor_loaded_with_flag?
+    return false unless notification_type == 'conversation_creation'
+    additional = conversation&.additional_attributes || {}
+    !!additional['visitor_loaded']
+  end
+
+  def visitor_flag
+    code = (conversation&.additional_attributes || {})['visitor_country_code']
+    return '' if code.blank?
+    code.upcase.chars.map { |ch| (127397 + ch.ord).chr(Encoding::UTF_8) }.join
+  end
 
   def message_body(actor)
     sender_name = sender_name(actor)

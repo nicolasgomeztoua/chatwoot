@@ -20,13 +20,9 @@ class VisitorListener < BaseListener
       )
     end
 
-    # Build country flag for the push title
+    # Mark as visitor-loaded so downstream notifications can customize push title
     country_code = fetch_country_code(contact_inbox.contact)
-    push_title = "#{to_flag(country_code)} - New visitor".strip
-
-    # Only send our custom "new visitor" notification when the conversation is in pending state
-    # to avoid duplicates with normal conversation creation/open events
-    notify_all_agents(account, conversation, push_title, country_code) if conversation.pending?
+    add_visitor_marker(conversation, country_code)
   end
 
   # Intentionally do not handle webwidget.triggered to avoid click-based notifications
@@ -43,28 +39,13 @@ class VisitorListener < BaseListener
     }.compact
   end
 
-  def notify_all_agents(account, conversation, push_title, country_code)
-    # Notify every agent (and administrators) in the account
-    account.users.find_each do |user|
-      notification = NotificationBuilder.new(
-        notification_type: 'conversation_creation',
-        user: user,
-        account: account,
-        primary_actor: conversation
-      ).perform
-
-      # Safeguard if for some reason notification couldn't be created
-      next if notification.blank?
-
-      # Store override push title and context
-      new_meta = (notification.meta || {}).merge(
-        'push_title' => push_title,
-        'country_code' => country_code
-      )
-      # rubocop:disable Rails/SkipsModelValidations
-      notification.update_column(:meta, new_meta)
-      # rubocop:enable Rails/SkipsModelValidations
-    end
+  def add_visitor_marker(conversation, country_code)
+    attrs = conversation.additional_attributes || {}
+    attrs['visitor_loaded'] = true
+    attrs['visitor_country_code'] = country_code if country_code.present?
+    # rubocop:disable Rails/SkipsModelValidations
+    conversation.update_column(:additional_attributes, attrs)
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   def fetch_country_code(contact)
