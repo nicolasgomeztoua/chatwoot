@@ -23,6 +23,7 @@ class VisitorListener < BaseListener
     # Mark as visitor-loaded so downstream notifications can customize push title
     country_code = fetch_country_code(contact_inbox.contact)
     add_visitor_marker(conversation, country_code)
+    notify_all_agents(conversation.inbox.account, conversation)
   end
 
   # Intentionally do not handle webwidget.triggered to avoid click-based notifications
@@ -46,6 +47,17 @@ class VisitorListener < BaseListener
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_column(:additional_attributes, attrs)
     # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def notify_all_agents(account, conversation)
+    account.users.find_each do |user|
+      NotificationBuilder.new(
+        notification_type: 'conversation_creation',
+        user: user,
+        account: account,
+        primary_actor: conversation
+      ).perform
+    end
   end
 
   def fetch_country_code(contact)
