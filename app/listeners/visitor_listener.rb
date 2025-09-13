@@ -10,14 +10,22 @@ class VisitorListener < BaseListener
     # Ensure there is a conversation so that the notification can deep-link
     conversation = contact_inbox.conversations.last
     if conversation.blank?
-      conversation = Conversation.create!(
-        account_id: account.id,
-        inbox_id: contact_inbox.inbox_id,
-        contact_id: contact_inbox.contact_id,
-        contact_inbox_id: contact_inbox.id,
-        additional_attributes: build_additional_attributes(event),
-        status: :pending
-      )
+      # Add a short idempotency lock to avoid double-create in burst loads
+      lock_key = "lock:visitor_conv:create:ci:#{contact_inbox.id}"
+      lock = Redis::LockManager.new
+      if lock.lock(lock_key, 1.second)
+        conversation = Conversation.create!(
+          account_id: account.id,
+          inbox_id: contact_inbox.inbox_id,
+          contact_id: contact_inbox.contact_id,
+          contact_inbox_id: contact_inbox.id,
+          additional_attributes: build_additional_attributes(event),
+          status: :pending
+        )
+      else
+        # Another process created it; fetch latest
+        conversation = contact_inbox.conversations.last
+      end
     end
 
     # Mark as visitor-loaded and persist best-effort location for reliability
