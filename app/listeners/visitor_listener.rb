@@ -22,6 +22,17 @@ class VisitorListener < BaseListener
           additional_attributes: build_additional_attributes(event),
           status: :pending
         )
+        # Create a lightweight private incoming message so clients have a sender context
+        # This will be hidden from widget (private) but available for agent/mobile rendering
+        conversation.messages.create!(
+          account_id: account.id,
+          inbox_id: contact_inbox.inbox_id,
+          sender: contact_inbox.contact,
+          message_type: :incoming,
+          content: '',
+          private: true,
+          additional_attributes: { 'system' => true }
+        )
       else
         # Another process created it; fetch latest
         conversation = contact_inbox.conversations.last
