@@ -61,7 +61,22 @@ class VisitorListener < BaseListener
     end
     if changed
       contact.update!(additional_attributes: additional)
+      attach_country_flag_avatar(contact, country_code)
     end
+  end
+
+  # Downloads flag image and attaches it as the contact avatar if none present
+  def attach_country_flag_avatar(contact, country_code)
+    return if contact.avatar.attached?
+
+    code = country_code.to_s.upcase
+    return if code.blank?
+
+    # Use FlagsAPI flat 64px PNG as source and store with deterministic filename
+    # Ref: https://flagsapi.com/
+    flag_url = "https://flagsapi.com/#{code}/flat/64.png"
+    preferred_filename = "flag_#{code}.png"
+    Avatar::AvatarFromUrlJob.perform_later(contact, flag_url, preferred_filename)
   end
 
   def notify_all_agents(account, conversation)

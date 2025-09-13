@@ -1,7 +1,7 @@
 class Avatar::AvatarFromUrlJob < ApplicationJob
   queue_as :purgable
 
-  def perform(avatarable, avatar_url)
+  def perform(avatarable, avatar_url, preferred_filename = nil)
     return unless avatarable.respond_to?(:avatar)
 
     avatar_file = Down.download(
@@ -9,7 +9,8 @@ class Avatar::AvatarFromUrlJob < ApplicationJob
       max_size: 15 * 1024 * 1024
     )
     if valid_image?(avatar_file)
-      avatarable.avatar.attach(io: avatar_file, filename: avatar_file.original_filename,
+      filename = preferred_filename.presence || avatar_file.original_filename
+      avatarable.avatar.attach(io: avatar_file, filename: filename,
                                content_type: avatar_file.content_type)
     end
   rescue Down::NotFound, Down::Error => e
