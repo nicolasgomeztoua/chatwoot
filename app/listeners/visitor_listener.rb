@@ -29,7 +29,7 @@ class VisitorListener < BaseListener
           inbox_id: contact_inbox.inbox_id,
           sender: contact_inbox.contact,
           message_type: :incoming,
-          content: '',
+          content: referer_path(event).presence || 'No Path Found',
           private: true,
           additional_attributes: { 'system' => true }
         )
@@ -98,6 +98,19 @@ class VisitorListener < BaseListener
     flag_url = "https://flagsapi.com/#{code}/flat/64.png"
     preferred_filename = "flag_#{code}.png"
     Avatar::AvatarFromUrlJob.perform_later(contact, flag_url, preferred_filename)
+  end
+
+  def referer_path(event)
+    info = event.data[:event_info] || {}
+    ref = info[:referer].to_s
+    return '' if ref.blank?
+    begin
+      uri = URI.parse(ref)
+      # Return only the pathname (no query/fragment)
+      uri.path.presence || '/'
+    rescue StandardError
+      ''
+    end
   end
 
   def notify_all_agents(account, conversation)
