@@ -329,6 +329,8 @@ class Message < ApplicationRecord
   def reopen_conversation
     return if conversation.muted?
     return unless incoming?
+    # Do not reopen on private/system seed messages
+    return if private? || additional_attributes&.dig('system')
 
     conversation.open! if conversation.snoozed?
     conversation.open! if conversation.pending?
