@@ -4,8 +4,12 @@ class Messages::NewMessageNotificationService
   def perform
     return unless message.notifiable?
 
-    notify_conversation_assignee
-    notify_participating_users
+    if message.incoming? && conversation.assignee.blank?
+      notify_inbox_members_if_unassigned
+    else
+      notify_conversation_assignee
+      notify_participating_users
+    end
   end
 
   private
@@ -36,6 +40,20 @@ class Messages::NewMessageNotificationService
       NotificationBuilder.new(
         notification_type: 'participating_conversation_new_message',
         user: participant,
+        account: account,
+        primary_actor: message.conversation,
+        secondary_actor: message
+      ).perform
+    end
+  end
+
+  def notify_inbox_members_if_unassigned
+    conversation.inbox.members.find_each do |agent|
+      next if already_notified?(agent)
+
+      NotificationBuilder.new(
+        notification_type: 'participating_conversation_new_message',
+        user: agent,
         account: account,
         primary_actor: message.conversation,
         secondary_actor: message

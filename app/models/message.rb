@@ -269,6 +269,7 @@ class Message < ApplicationRecord
   def execute_after_create_commit_callbacks
     # rails issue with order of active record callbacks being executed https://github.com/rails/rails/issues/20911
     reopen_conversation
+    assign_to_sender_if_unassigned
     notify_via_mail
     set_conversation_activity
     dispatch_create_events
@@ -356,6 +357,16 @@ class Message < ApplicationRecord
 
   def execute_message_template_hooks
     ::MessageTemplates::HookExecutionService.new(message: self).perform
+  end
+
+  # Assign conversation to the agent who sends the first human reply on an unassigned conversation
+  def assign_to_sender_if_unassigned
+    return unless human_response?
+    return if private?
+    return unless conversation.assignee.blank?
+    return unless sender.is_a?(User)
+
+    conversation.update(assignee: sender)
   end
 
   def email_notifiable_webwidget?
