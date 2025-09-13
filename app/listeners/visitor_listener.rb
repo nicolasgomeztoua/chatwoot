@@ -24,6 +24,7 @@ class VisitorListener < BaseListener
     country_code = fetch_country_code(contact_inbox.contact)
     add_visitor_marker(conversation, country_code)
     persist_country_if_missing(contact_inbox.contact, country_code)
+    attach_country_flag_avatar(contact_inbox.contact, country_code)
     notify_all_agents(conversation.inbox.account, conversation)
   end
 
@@ -67,6 +68,7 @@ class VisitorListener < BaseListener
 
   # Downloads flag image and attaches it as the contact avatar if none present
   def attach_country_flag_avatar(contact, country_code)
+    # Only override when the contact is using the default placeholder (no avatar attached)
     return if contact.avatar.attached?
 
     code = country_code.to_s.upcase
