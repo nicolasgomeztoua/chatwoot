@@ -14,7 +14,9 @@ module MessageFilterHelpers
   end
 
   def notifiable?
-    incoming? || outgoing?
+    # Notify only for real user-visible messages
+    # Skip private/system seed messages
+    (incoming? || outgoing?) && !private? && !additional_attributes&.dig('system')
   end
 
   def conversation_transcriptable?
