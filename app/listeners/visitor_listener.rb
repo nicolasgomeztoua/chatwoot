@@ -47,9 +47,63 @@ class VisitorListener < BaseListener
     notify_all_agents(conversation.inbox.account, conversation)
   end
 
+  def visitor_navigated(event)
+    contact_inbox = event.data[:contact_inbox]
+    return if contact_inbox.blank?
+
+    conversation = contact_inbox.conversations.last
+    return if conversation.blank?
+
+    path = extract_navigation_path(event)
+    return if path.blank?
+    return if duplicate_navigation_event?(conversation, path)
+
+    message_params = navigation_activity_message_params(conversation, path)
+    Conversations::ActivityMessageJob.perform_later(conversation, message_params)
+  end
+
+
   # Intentionally do not handle webwidget.triggered to avoid click-based notifications
 
   private
+
+  def extract_navigation_path(event)
+    info = (event.data[:event_info] || {}).with_indifferent_access
+    referer = info[:referer]
+    return if referer.blank?
+
+    uri = URI.parse(referer)
+    path = uri.path.presence || '/'
+    path = [path, uri.query].compact.join('?')
+    fragment = uri.fragment
+    path = [path, fragment].reject(&:blank?).join('#')
+    path.presence || '/'
+  rescue URI::InvalidURIError
+    referer
+  end
+
+  def duplicate_navigation_event?(conversation, path)
+    conversation.messages.where(message_type: :activity, private: true)
+                 .where("content_attributes ->> 'activity_identifier' = ?", 'visitor_navigated')
+                 .order(created_at: :desc)
+                 .limit(1)
+                 .pluck(Arel.sql("content_attributes ->> 'path'"))
+                 .first == path
+  end
+
+  def navigation_activity_message_params(conversation, path)
+    {
+      account_id: conversation.account_id,
+      inbox_id: conversation.inbox_id,
+      message_type: :activity,
+      content: I18n.t('conversations.activity.visitor.navigated', path: path),
+      private: true,
+      content_attributes: {
+        'activity_identifier' => 'visitor_navigated',
+        'path' => path
+      }
+    }
+  end
 
   def build_additional_attributes(event)
     info = event.data[:event_info] || {}

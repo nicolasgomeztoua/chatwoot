@@ -12,6 +12,7 @@ module Events::Types
 
   # channel events
   WEBWIDGET_TRIGGERED = 'webwidget.triggered'
+  VISITOR_NAVIGATED = 'visitor.navigated'
 
   # conversation events
   CONVERSATION_CREATED = 'conversation.created'

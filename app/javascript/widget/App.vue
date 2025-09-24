@@ -278,6 +278,7 @@ export default {
           });
           window.referrerURL = referrerURL;
           this.setReferrerHost(referrerHost);
+          this.$store.dispatch('events/create', { name: 'visitor.navigated' });
         } else if (message.event === 'toggle-close-button') {
           this.isMobile = message.isMobile;
         } else if (message.event === 'push-event') {
