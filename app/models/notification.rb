@@ -193,10 +193,7 @@ class Notification < ApplicationRecord
     conversation = actor.respond_to?(:conversation) ? actor.conversation : nil
     return '/' if conversation.blank?
 
-    referer = (conversation.additional_attributes || {})['referer']
-    return '/' if referer.blank?
-
-    parse_path_from_url(referer)
+    conversation_initial_path(conversation).presence || '/'
   end
 
   def parse_path_from_url(url)
@@ -207,6 +204,29 @@ class Notification < ApplicationRecord
     [path, fragment].reject(&:blank?).join('#').presence || '/'
   rescue URI::InvalidURIError
     url
+  end
+
+  def conversation_initial_path(conversation)
+    attrs = conversation.additional_attributes || {}
+    path = attrs['visitor_initial_path']
+    path = parse_path_from_url(path) if path.present? && path.include?('://')
+    if path.blank? && attrs['referer'].present?
+      path = parse_path_from_url(attrs['referer'])
+    end
+    if path.blank? || path == '/'
+      navigation_path = navigation_activity_path(conversation)
+      path = navigation_path if navigation_path.present?
+    end
+    path
+  end
+
+  def navigation_activity_path(conversation)
+    conversation.messages.where(message_type: :activity, private: true)
+                 .where("content_attributes ->> 'activity_identifier' = ?", 'visitor_navigated')
+                 .order(:created_at)
+                 .limit(1)
+                 .pluck(Arel.sql("content_attributes ->> 'path'"))
+                 .first
   end
 
   def process_notification_delivery

@@ -115,7 +115,8 @@ has been assigned to you"
         :conversation,
         additional_attributes: {
           'visitor_loaded' => true,
-          'referer' => 'https://www.example.com/pricing?plan=pro#faq'
+          'referer' => 'https://www.example.com/pricing?plan=pro#faq',
+          'visitor_initial_path' => '/pricing?plan=pro#faq'
         }
       )
       message = create(:message, conversation: conversation, account: conversation.account, private: true, content: '',
@@ -124,6 +125,19 @@ has been assigned to you"
                                            account: conversation.account)
 
       expect(notification.push_message_body).to eq "#{message.sender.name}: #{I18n.t('notifications.new_visitor', path: '/pricing?plan=pro#faq')}"
+    end
+
+    it 'falls back to visitor activity path when initial path is not stored' do
+      conversation = create(:conversation, additional_attributes: { 'visitor_loaded' => true })
+      message = create(:message, conversation: conversation, account: conversation.account, private: true, content: '',
+                                 additional_attributes: { 'system' => true })
+      create(:message, conversation: conversation, account: conversation.account, message_type: :activity, private: true,
+                       content: 'Visitor has navigated to /blog',
+                       content_attributes: { 'activity_identifier' => 'visitor_navigated', 'path' => '/blog' })
+      notification = create(:notification, notification_type: 'conversation_creation', primary_actor: conversation,
+                                           account: conversation.account)
+
+      expect(notification.push_message_body).to eq "#{message.sender.name}: #{I18n.t('notifications.new_visitor', path: '/blog')}"
     end
 
     it 'returns appropriate body suited for the notification type participating_conversation_new_message having multple mention' do

@@ -7,6 +7,7 @@ class VisitorListener < BaseListener
     return if contact_inbox.blank?
 
     account = contact_inbox.inbox.account
+    initial_path = extract_navigation_path(event)
     # Ensure there is a conversation so that the notification can deep-link
     conversation = contact_inbox.conversations.last
     if conversation.blank?
@@ -41,7 +42,7 @@ class VisitorListener < BaseListener
 
     # Mark as visitor-loaded and persist best-effort location for reliability
     country_code = fetch_country_code(contact_inbox.contact)
-    add_visitor_marker(conversation, country_code)
+    add_visitor_marker(conversation, country_code, initial_path)
     persist_country_if_missing(contact_inbox.contact, country_code)
     attach_country_flag_avatar(contact_inbox.contact, country_code)
     notify_all_agents(conversation.inbox.account, conversation)
@@ -58,6 +59,7 @@ class VisitorListener < BaseListener
     return if path.blank?
     return if duplicate_navigation_event?(conversation, path)
 
+    store_initial_path(conversation, path)
     message_params = navigation_activity_message_params(conversation, path)
     Conversations::ActivityMessageJob.perform_later(conversation, message_params)
   end
@@ -115,10 +117,23 @@ class VisitorListener < BaseListener
     }.compact
   end
 
-  def add_visitor_marker(conversation, country_code)
+  def add_visitor_marker(conversation, country_code, initial_path)
     attrs = conversation.additional_attributes || {}
     attrs['visitor_loaded'] = true
     attrs['visitor_country_code'] = country_code if country_code.present?
+    attrs['visitor_initial_path'] ||= initial_path if initial_path.present?
+    # rubocop:disable Rails/SkipsModelValidations
+    conversation.update_column(:additional_attributes, attrs)
+    # rubocop:enable Rails/SkipsModelValidations
+  end
+
+  def store_initial_path(conversation, path)
+    return if path.blank?
+
+    attrs = conversation.additional_attributes || {}
+    return if attrs['visitor_initial_path'].present?
+
+    attrs['visitor_initial_path'] = path
     # rubocop:disable Rails/SkipsModelValidations
     conversation.update_column(:additional_attributes, attrs)
     # rubocop:enable Rails/SkipsModelValidations
@@ -186,5 +201,4 @@ class VisitorListener < BaseListener
 end
 
 VisitorListener.prepend_mod_with('VisitorListener')
-
 
