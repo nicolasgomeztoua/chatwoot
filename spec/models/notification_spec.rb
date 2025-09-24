@@ -110,6 +110,22 @@ has been assigned to you"
       expect(notification.push_message_body).to eq "#{message.sender.name}: Attachment"
     end
 
+    it 'returns visitor specific body when conversation was created from visitor load event' do
+      conversation = create(
+        :conversation,
+        additional_attributes: {
+          'visitor_loaded' => true,
+          'referer' => 'https://www.example.com/pricing?plan=pro#faq'
+        }
+      )
+      message = create(:message, conversation: conversation, account: conversation.account, private: true, content: '',
+                                 additional_attributes: { 'system' => true })
+      notification = create(:notification, notification_type: 'conversation_creation', primary_actor: conversation,
+                                           account: conversation.account)
+
+      expect(notification.push_message_body).to eq "#{message.sender.name}: #{I18n.t('notifications.new_visitor', path: '/pricing?plan=pro#faq')}"
+    end
+
     it 'returns appropriate body suited for the notification type participating_conversation_new_message having multple mention' do
       conversation = create(:conversation)
       message = create(:message, sender: create(:user),

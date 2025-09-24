@@ -152,8 +152,12 @@ class Notification < ApplicationRecord
   end
 
   def message_body(actor)
+    return '' if actor.blank?
+
     sender_name = sender_name(actor)
     content = message_content(actor)
+    return content if sender_name.blank?
+
     "#{sender_name}: #{content}"
   end
 
@@ -167,9 +171,42 @@ class Notification < ApplicationRecord
 
     if content.present?
       transform_user_mention_content(content.truncate_words(10))
+    elsif visitor_system_message?(actor)
+      I18n.t('notifications.new_visitor', path: visitor_entry_path(actor))
     else
       attachments.present? ? I18n.t('notifications.attachment') : I18n.t('notifications.no_content')
     end
+  end
+
+  def visitor_system_message?(actor)
+    return false unless actor.respond_to?(:additional_attributes)
+
+    additional_attributes = actor.additional_attributes || {}
+    return false unless additional_attributes['system']
+    return false unless actor.respond_to?(:conversation)
+
+    conversation_attributes = actor.conversation&.additional_attributes || {}
+    conversation_attributes['visitor_loaded'].present?
+  end
+
+  def visitor_entry_path(actor)
+    conversation = actor.respond_to?(:conversation) ? actor.conversation : nil
+    return '/' if conversation.blank?
+
+    referer = (conversation.additional_attributes || {})['referer']
+    return '/' if referer.blank?
+
+    parse_path_from_url(referer)
+  end
+
+  def parse_path_from_url(url)
+    uri = URI.parse(url)
+    path = uri.path.presence || '/'
+    path = [path, uri.query].compact.join('?')
+    fragment = uri.fragment
+    [path, fragment].reject(&:blank?).join('#').presence || '/'
+  rescue URI::InvalidURIError
+    url
   end
 
   def process_notification_delivery
