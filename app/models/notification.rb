@@ -76,12 +76,15 @@ class Notification < ApplicationRecord
   end
 
   def fcm_push_data
+    primary_actor_payload = primary_actor.push_event_data.with_indifferent_access.slice('conversation_id', 'id')
+    primary_actor_payload['conversation_id'] ||= conversation&.display_id
+
     {
       id: id,
       notification_type: notification_type,
       primary_actor_id: primary_actor_id,
       primary_actor_type: primary_actor_type,
-      primary_actor: primary_actor.push_event_data.with_indifferent_access.slice('conversation_id', 'id')
+      primary_actor: primary_actor_payload
     }
   end
 
