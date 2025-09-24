@@ -21,6 +21,19 @@ const navigationLabel = computed(() =>
   t('CONVERSATION.VISITOR_NAVIGATED_PREFIX')
 );
 
+const navigationHref = computed(() => {
+  if (!navigationPath.value) {
+    return '#';
+  }
+
+  const baseUrl = 'https://www.versaciboosts.com'.replace(/\/$/, '');
+  const formattedPath = navigationPath.value.startsWith('/')
+    ? navigationPath.value
+    : `/${navigationPath.value}`;
+
+  return `${baseUrl}${formattedPath}`;
+});
+
 const bubbleClass = computed(() =>
   isVisitorNavigation.value
     ? '!bg-transparent !px-0 !py-0 w-full !rounded-none'
@@ -42,12 +55,15 @@ const bubbleClass = computed(() =>
           class="flex flex-wrap items-center justify-center gap-2 text-xs text-n-slate-11 text-center max-w-full"
         >
           <span>{{ navigationLabel }}</span>
-          <span
-            class="font-medium text-n-slate-12 break-all"
+          <a
+            :href="navigationHref"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-medium text-n-slate-12 break-all hover:text-n-iris-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-n-iris-7 rounded-sm"
             :title="navigationPath"
           >
             {{ navigationPath }}
-          </span>
+          </a>
         </div>
         <span class="flex-1 h-px bg-n-alpha-4" />
       </div>
