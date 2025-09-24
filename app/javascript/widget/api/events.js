@@ -1,12 +1,17 @@
 import { API } from 'widget/helpers/axios';
 import { buildSearchParamsWithLocale } from '../helpers/urlParamsHelper';
 
-export const generateEventParams = () => ({
-  initiated_at: {
-    timestamp: new Date().toString(),
-  },
-  referer: window.referrerURL || '',
-});
+export const generateEventParams = () => {
+  const locationHref =
+    typeof window !== 'undefined' && window.location ? window.location.href : '';
+
+  return {
+    initiated_at: {
+      timestamp: new Date().toString(),
+    },
+    referer: window.referrerURL || locationHref || '',
+  };
+};
 
 export default {
   create(name) {
