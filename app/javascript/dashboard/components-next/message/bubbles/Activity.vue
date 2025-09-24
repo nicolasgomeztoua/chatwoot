@@ -11,14 +11,36 @@ const { content, createdAt, contentAttributes } = useMessageContext();
 const readableTime = computed(() =>
   messageTimestamp(createdAt.value, 'LLL d, h:mm a')
 );
-const isVisitorNavigation = computed(() =>
-  contentAttributes.value?.activityIdentifier === 'visitor_navigated'
-);
-
-const navigationPath = computed(() => contentAttributes.value?.path || '');
 
 const navigationLabel = computed(() =>
   t('CONVERSATION.VISITOR_NAVIGATED_PREFIX')
+);
+
+const normalizedContent = computed(() =>
+  content.value ? content.value.replace(/<[^>]*>/g, '').trim() : ''
+);
+
+const fallbackNavigationPath = computed(() => {
+  const label = navigationLabel.value;
+  const text = normalizedContent.value;
+  if (!label || !text) {
+    return '';
+  }
+
+  if (!text.startsWith(label)) {
+    return '';
+  }
+
+  return text.slice(label.length).trim();
+});
+
+const navigationPath = computed(() =>
+  contentAttributes.value?.path || fallbackNavigationPath.value
+);
+
+const isVisitorNavigation = computed(() =>
+  contentAttributes.value?.activityIdentifier === 'visitor_navigated' ||
+  Boolean(navigationPath.value)
 );
 
 const navigationHref = computed(() => {
