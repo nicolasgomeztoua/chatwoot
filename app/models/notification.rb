@@ -197,13 +197,7 @@ class Notification < ApplicationRecord
   end
 
   def parse_path_from_url(url)
-    uri = URI.parse(url)
-    path = uri.path.presence || '/'
-    path = [path, uri.query].compact.join('?')
-    fragment = uri.fragment
-    [path, fragment].reject(&:blank?).join('#').presence || '/'
-  rescue URI::InvalidURIError
-    url
+    NavigationPathHelper.sanitized_path(url)
   end
 
   def conversation_initial_path(conversation)

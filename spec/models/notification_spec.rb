@@ -115,8 +115,8 @@ has been assigned to you"
         :conversation,
         additional_attributes: {
           'visitor_loaded' => true,
-          'referer' => 'https://www.example.com/pricing?plan=pro#faq',
-          'visitor_initial_path' => '/pricing?plan=pro#faq'
+          'referer' => 'https://www.example.com/pricing?plan=pro&cw_conversation=jwt-token&website_token=site-token#faq',
+          'visitor_initial_path' => '/pricing?plan=pro&cw_widget_id=widget-123#faq'
         }
       )
       message = create(:message, conversation: conversation, account: conversation.account, private: true, content: '',

@@ -74,14 +74,7 @@ class VisitorListener < BaseListener
     referer = info[:referer]
     return if referer.blank?
 
-    uri = URI.parse(referer)
-    path = uri.path.presence || '/'
-    path = [path, uri.query].compact.join('?')
-    fragment = uri.fragment
-    path = [path, fragment].reject(&:blank?).join('#')
-    path.presence || '/'
-  rescue URI::InvalidURIError
-    referer
+    NavigationPathHelper.sanitized_path(referer)
   end
 
   def duplicate_navigation_event?(conversation, path)
