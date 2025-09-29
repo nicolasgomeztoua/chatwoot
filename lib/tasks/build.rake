@@ -1,6 +1,14 @@
 # ref: https://github.com/rails/rails/issues/43906#issuecomment-1094380699
 # https://github.com/rails/rails/issues/43906#issuecomment-1099992310
 task before_assets_precompile: :environment do
+  # Ensure node has enough memory during asset builds
+  desired_node_flag = '--max-old-space-size=4096'
+  node_options = ENV.fetch('NODE_OPTIONS', '').split(/\s+/)
+  unless node_options.include?(desired_node_flag)
+    node_options << desired_node_flag
+    ENV['NODE_OPTIONS'] = node_options.reject(&:empty?).join(' ')
+  end
+
   # run a command which starts your packaging
   system('pnpm install')
   system('echo "-------------- Bulding SDK for Production --------------"')
