@@ -2,7 +2,9 @@ import { buildSearchParamsWithLocale } from '../helpers/urlParamsHelper';
 import { generateEventParams } from './events';
 
 const createConversation = params => {
-  const referrerURL = window.referrerURL || '';
+  const docReferrer =
+    typeof document !== 'undefined' && document.referrer ? document.referrer : '';
+  const referrerURL = window.referrerURL || docReferrer || window.location.href || '';
   const search = buildSearchParamsWithLocale(window.location.search);
   return {
     url: `/api/v1/widget/conversations${search}`,
@@ -23,7 +25,9 @@ const createConversation = params => {
 };
 
 const sendMessage = (content, replyTo) => {
-  const referrerURL = window.referrerURL || '';
+  const docReferrer =
+    typeof document !== 'undefined' && document.referrer ? document.referrer : '';
+  const referrerURL = window.referrerURL || docReferrer || window.location.href || '';
   const search = buildSearchParamsWithLocale(window.location.search);
   return {
     url: `/api/v1/widget/messages${search}`,
@@ -39,7 +43,9 @@ const sendMessage = (content, replyTo) => {
 };
 
 const sendAttachment = ({ attachment, replyTo = null }) => {
-  const { referrerURL = '' } = window;
+  const docReferrer =
+    typeof document !== 'undefined' && document.referrer ? document.referrer : '';
+  const referrerURL = window.referrerURL || docReferrer || window.location.href || '';
   const timestamp = new Date().toString();
   const { file } = attachment;
 

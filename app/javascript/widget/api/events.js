@@ -4,12 +4,15 @@ import { buildSearchParamsWithLocale } from '../helpers/urlParamsHelper';
 export const generateEventParams = () => {
   const locationHref =
     typeof window !== 'undefined' && window.location ? window.location.href : '';
+  const docReferrer =
+    typeof document !== 'undefined' && document.referrer ? document.referrer : '';
 
   return {
     initiated_at: {
       timestamp: new Date().toString(),
     },
-    referer: window.referrerURL || locationHref || '',
+    // Prefer SDK-provided referrerURL, then document.referrer, then current location
+    referer: window.referrerURL || docReferrer || locationHref || '',
   };
 };
 
